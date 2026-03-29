@@ -24,6 +24,7 @@ This repository is currently in an MVP-but-usable state:
 - not yet polished enough to call a broadly distributed finished product
 
 The product scope is anchored to [AGENT/PRD.md](AGENT/PRD.md). The implementation history so far is documented in [AGENT/PROGRESSION.md](AGENT/PROGRESSION.md).
+Release history lives in [CHANGELOG.md](CHANGELOG.md).
 
 ## Current State
 
@@ -117,6 +118,8 @@ Generate a package:
 ```
 
 This produces a `.tgz` archive in `.build/`.
+
+If you tag a release in GitHub, the workflow in `.github/workflows/release.yml` is set up to build and publish release artifacts for macOS and Linux.
 
 ### 3. Install From A Release Archive
 

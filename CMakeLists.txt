@@ -45,7 +45,7 @@ add_executable(profilex src/main.cpp)
 target_link_libraries(profilex PRIVATE profilex_lib)
 
 install(TARGETS profilex RUNTIME DESTINATION bin)
-install(FILES README.md AGENT/PRD.md docs/release-install.md DESTINATION share/doc/profilex)
+install(FILES README.md docs/release-install.md CHANGELOG.md DESTINATION share/doc/profilex)
 
 add_custom_target(profilex_demo
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/demo.sh ${CMAKE_CURRENT_BINARY_DIR}/profilex

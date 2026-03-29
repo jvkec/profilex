@@ -4,8 +4,10 @@
 #include <chrono>
 #include <csignal>
 #include <filesystem>
-#include <future>
+#include <fstream>
 #include <thread>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "runner/command_runner.hpp"
 
@@ -62,20 +64,35 @@ TEST_CASE("CommandRunner maps signal termination to shell-style exit status") {
 }
 
 TEST_CASE("CommandRunner forwards SIGINT to the active child process group") {
-    profilex::runner::CommandRunner runner;
-    auto options = make_options();
     const auto ready_file =
         std::filesystem::temp_directory_path() / "profilex_runner_sigint_ready";
+    const auto result_file =
+        std::filesystem::temp_directory_path() / "profilex_runner_sigint_result";
     std::filesystem::remove(ready_file);
+    std::filesystem::remove(result_file);
 
-    options.command_tokens = {"/bin/sh",
-                              "-c",
-                              "trap 'exit 42' INT; printf ready > \"$1\"; while :; do sleep 0.1; done",
-                              "sh",
-                              ready_file.string()};
-    options.runs = 1;
+    const pid_t child = fork();
+    REQUIRE(child >= 0);
 
-    auto future = std::async(std::launch::async, [&runner, options]() { return runner.run(options); });
+    if (child == 0) {
+        profilex::runner::CommandRunner runner;
+        auto options = make_options();
+        options.command_tokens = {"/bin/sh",
+                                  "-c",
+                                  "printf ready > \"$1\"; while :; do sleep 0.1; done",
+                                  "sh",
+                                  ready_file.string()};
+        options.runs = 1;
+
+        try {
+            const auto record = runner.run(options);
+            std::ofstream out(result_file, std::ios::trunc);
+            out << record.samples.front().exit_code;
+            _exit(record.samples.front().exit_code == 130 ? 0 : 1);
+        } catch (...) {
+            _exit(2);
+        }
+    }
 
     for (int attempt = 0; attempt < 50; ++attempt) {
         if (std::filesystem::exists(ready_file)) {
@@ -85,13 +102,21 @@ TEST_CASE("CommandRunner forwards SIGINT to the active child process group") {
     }
 
     REQUIRE(std::filesystem::exists(ready_file));
-    std::raise(SIGINT);
+    kill(child, SIGINT);
 
-    const auto record = future.get();
-    REQUIRE(record.samples.size() == 1U);
-    CHECK(record.samples.front().exit_code == 42);
+    int status = 0;
+    REQUIRE(waitpid(child, &status, 0) == child);
+    REQUIRE(WIFEXITED(status));
+    CHECK(WEXITSTATUS(status) == 0);
+    CHECK(std::filesystem::exists(result_file));
+
+    std::ifstream in(result_file);
+    int observed_exit_code = 0;
+    in >> observed_exit_code;
+    CHECK(observed_exit_code == 130);
 
     std::filesystem::remove(ready_file);
+    std::filesystem::remove(result_file);
 }
 
 TEST_CASE("CommandRunner rejects invalid inputs") {

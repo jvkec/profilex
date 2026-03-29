@@ -24,7 +24,6 @@ This repository is currently in an MVP-but-usable state:
 - prepared to publish tagged GitHub release artifacts
 - not yet polished enough to call a broadly distributed finished product
 
-The product scope is anchored to [AGENT/PRD.md](AGENT/PRD.md). The implementation history so far is documented in [AGENT/PROGRESSION.md](AGENT/PROGRESSION.md).
 Release history lives in [CHANGELOG.md](CHANGELOG.md).
 
 ## Current State

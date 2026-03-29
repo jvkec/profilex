@@ -40,13 +40,14 @@ jobs:
       - name: Package
         run: cmake --build .build --target package
 
+      - name: List packaged files
+        run: ls -la .build
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: profilex-${{ runner.os }}
-          path: |
-            .build/*.tar.gz
-            .build/*.tgz
+          path: .build/*.tar.gz
           if-no-files-found: error
 
   publish-release:
@@ -67,7 +68,7 @@ jobs:
       - name: Collect packaged files
         run: |
           mkdir -p dist
-          find release-artifacts -maxdepth 1 -type f \( -name "*.tar.gz" -o -name "*.tgz" \) -exec cp {} dist/ \;
+          find release-artifacts -maxdepth 1 -type f -name "*.tar.gz" -exec cp {} dist/ \;
           ls -la dist
 
       - name: Publish GitHub Release

@@ -49,6 +49,7 @@ jobs:
           name: profilex-${{ runner.os }}
           path: .build/*.tar.gz
           if-no-files-found: error
+          include-hidden-files: true
 
   publish-release:
     needs: build-release

@@ -21,6 +21,7 @@ class RunRepository {
   private:
     std::filesystem::path path_for(const std::string& name) const;
     void ensure_root_exists() const;
+    static void validate_run_name(const std::string& name);
 
     std::filesystem::path root_;
 };

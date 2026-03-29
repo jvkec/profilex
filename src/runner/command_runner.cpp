@@ -1,5 +1,8 @@
 #include "runner/command_runner.hpp"
 
+#include <array>
+#include <atomic>
+#include <cerrno>
 #include <chrono>
 #include <csignal>
 #include <ctime>
@@ -8,12 +11,64 @@
 #include <string>
 #include <string_view>
 #include <sys/wait.h>
+#include <unistd.h>
 #include <vector>
 
 extern char** environ;
 
 namespace profilex::runner {
 namespace {
+
+std::atomic<pid_t> g_active_child_pgid {0};
+
+void forwarding_signal_handler(const int signal_number) {
+    const pid_t pgid = g_active_child_pgid.load();
+    if (pgid > 0) {
+        kill(-pgid, signal_number);
+    }
+}
+
+class SignalForwardingScope {
+  public:
+    explicit SignalForwardingScope(const pid_t child_pgid) : child_pgid_(child_pgid) {
+        g_active_child_pgid.store(child_pgid_);
+
+        install_handler(SIGINT, 0U);
+        install_handler(SIGTERM, 1U);
+        install_handler(SIGHUP, 2U);
+        install_handler(SIGQUIT, 3U);
+    }
+
+    SignalForwardingScope(const SignalForwardingScope&) = delete;
+    SignalForwardingScope& operator=(const SignalForwardingScope&) = delete;
+
+    ~SignalForwardingScope() {
+        restore_handler(SIGINT, 0U);
+        restore_handler(SIGTERM, 1U);
+        restore_handler(SIGHUP, 2U);
+        restore_handler(SIGQUIT, 3U);
+        g_active_child_pgid.store(0);
+    }
+
+  private:
+    void install_handler(const int signal_number, const std::size_t slot) {
+        struct sigaction action {};
+        action.sa_handler = forwarding_signal_handler;
+        sigemptyset(&action.sa_mask);
+        action.sa_flags = 0;
+
+        if (sigaction(signal_number, &action, &previous_actions_[slot]) != 0) {
+            throw std::runtime_error("failed to install signal forwarding handler");
+        }
+    }
+
+    void restore_handler(const int signal_number, const std::size_t slot) noexcept {
+        sigaction(signal_number, &previous_actions_[slot], nullptr);
+    }
+
+    pid_t child_pgid_ {};
+    std::array<struct sigaction, 4U> previous_actions_ {};
+};
 
 std::string shell_quote(std::string_view token) {
     std::string quoted;
@@ -51,16 +106,36 @@ int execute_shell_command(const std::string& command) {
 
     char* argv[] = {shell_name, flag, mutable_command.data(), nullptr};
     pid_t process_id {};
+    posix_spawnattr_t attributes;
+    if (posix_spawnattr_init(&attributes) != 0) {
+        throw std::runtime_error("failed to initialize spawn attributes");
+    }
+
+    if (posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETPGROUP) != 0) {
+        posix_spawnattr_destroy(&attributes);
+        throw std::runtime_error("failed to configure spawn flags");
+    }
+    if (posix_spawnattr_setpgroup(&attributes, 0) != 0) {
+        posix_spawnattr_destroy(&attributes);
+        throw std::runtime_error("failed to configure child process group");
+    }
 
     const int spawn_result =
-        posix_spawn(&process_id, shell_path, nullptr, nullptr, argv, environ);
+        posix_spawn(&process_id, shell_path, nullptr, &attributes, argv, environ);
+    posix_spawnattr_destroy(&attributes);
     if (spawn_result != 0) {
         throw std::runtime_error("failed to spawn command");
     }
 
     int status {};
-    if (waitpid(process_id, &status, 0) == -1) {
-        throw std::runtime_error("failed to wait for command completion");
+    {
+        SignalForwardingScope forwarding_scope(process_id);
+        while (waitpid(process_id, &status, 0) == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
+            throw std::runtime_error("failed to wait for command completion");
+        }
     }
 
     if (WIFEXITED(status)) {

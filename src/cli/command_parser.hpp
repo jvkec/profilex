@@ -10,6 +10,7 @@ namespace profilex::cli {
 
 enum class CommandType {
     help,
+    version,
     run,
     list,
     show,

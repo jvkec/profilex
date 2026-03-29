@@ -27,6 +27,7 @@ target_include_directories(profilex_lib
 )
 
 target_compile_features(profilex_lib PUBLIC cxx_std_20)
+target_compile_definitions(profilex_lib PUBLIC PROFILEX_VERSION="${PROJECT_VERSION}")
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(profilex_lib PRIVATE -Wall -Wextra -Wpedantic)

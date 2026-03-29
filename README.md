@@ -21,6 +21,7 @@ This repository is currently in an MVP-but-usable state:
 - tested against synthetic workflows and at least one real external C++ project
 - installable from source today
 - packageable into a release archive today
+- prepared to publish tagged GitHub release artifacts
 - not yet polished enough to call a broadly distributed finished product
 
 The product scope is anchored to [AGENT/PRD.md](AGENT/PRD.md). The implementation history so far is documented in [AGENT/PROGRESSION.md](AGENT/PROGRESSION.md).
@@ -82,6 +83,7 @@ cd profilex
 If `~/.local/bin` is on your `PATH`, you can then run:
 
 ```sh
+profilex --version
 profilex help
 ```
 
@@ -120,6 +122,7 @@ Generate a package:
 This produces a `.tgz` archive in `.build/`.
 
 If you tag a release in GitHub, the workflow in `.github/workflows/release.yml` is set up to build and publish release artifacts for macOS and Linux.
+Until you publish those tagged releases, users still need either the source tree or a locally built archive.
 
 ### 3. Install From A Release Archive
 
@@ -163,6 +166,11 @@ Supported options:
 - `--tag <value>` repeatable
 - `--notes <text>`
 - `--overwrite`
+
+Global flags:
+
+- `--help`
+- `--version`
 
 ### `list`
 

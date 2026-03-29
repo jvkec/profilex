@@ -13,6 +13,9 @@ ParsedCommand CommandParser::parse(const std::vector<std::string>& args) const {
     if (command == "help" || command == "--help" || command == "-h") {
         return ParsedCommand{.type = CommandType::help};
     }
+    if (command == "version" || command == "--version" || command == "-V") {
+        return ParsedCommand{.type = CommandType::version};
+    }
     if (command == "run") {
         return parse_run(slice(args, 2U));
     }

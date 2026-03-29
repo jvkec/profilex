@@ -25,6 +25,15 @@ TEST_CASE("CommandParser returns help by default") {
     CHECK(parsed.type == profilex::cli::CommandType::help);
 }
 
+TEST_CASE("CommandParser parses version flags") {
+    profilex::cli::CommandParser parser;
+
+    CHECK(parser.parse(make_args({"profilex", "--version"})).type ==
+          profilex::cli::CommandType::version);
+    CHECK(parser.parse(make_args({"profilex", "-V"})).type ==
+          profilex::cli::CommandType::version);
+}
+
 TEST_CASE("CommandParser parses run with defaults and command separator") {
     profilex::cli::CommandParser parser;
     const auto parsed = parser.parse(

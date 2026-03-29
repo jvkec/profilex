@@ -19,10 +19,17 @@ int Application::run(const std::vector<std::string>& args) const {
         std::cout << usage();
         return 0;
     }
+    if (command.type == CommandType::version) {
+        std::cout << "profilex " << PROFILEX_VERSION << '\n';
+        return 0;
+    }
 
     switch (command.type) {
         case CommandType::help:
             std::cout << usage();
+            return 0;
+        case CommandType::version:
+            std::cout << "profilex " << PROFILEX_VERSION << '\n';
             return 0;
         case CommandType::run:
             return run_command(command);
@@ -44,6 +51,7 @@ int Application::run(const std::vector<std::string>& args) const {
 std::string Application::usage() {
     return
         "ProfileX\n"
+        "  profilex --version\n"
         "  profilex run --name <name> [--runs N] [--warmup N] [--tag value] [--notes text] [--overwrite] -- <command>\n"
         "  profilex list\n"
         "  profilex show <name>\n"

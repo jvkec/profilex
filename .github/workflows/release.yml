@@ -47,6 +47,7 @@ jobs:
           path: |
             .build/*.tar.gz
             .build/*.tgz
+          if-no-files-found: error
 
   publish-release:
     needs: build-release
@@ -59,12 +60,14 @@ jobs:
       - name: Download release artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: profilex-*
           path: release-artifacts
+          merge-multiple: true
 
       - name: Collect packaged files
         run: |
           mkdir -p dist
-          find release-artifacts -type f \( -name "*.tar.gz" -o -name "*.tgz" \) -exec cp {} dist/ \;
+          find release-artifacts -maxdepth 1 -type f \( -name "*.tar.gz" -o -name "*.tgz" \) -exec cp {} dist/ \;
           ls -la dist
 
       - name: Publish GitHub Release

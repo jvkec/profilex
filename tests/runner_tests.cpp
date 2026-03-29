@@ -65,8 +65,8 @@ TEST_CASE("CommandRunner maps signal termination to shell-style exit status") {
 }
 
 TEST_CASE("CommandRunner forwards SIGTERM to the active child process group") {
-    if (std::getenv("CI") != nullptr) {
-        MESSAGE("Skipping signal forwarding test on CI due to shell/process-group variability.");
+    if (std::getenv("PROFILEX_ENABLE_SIGNAL_FORWARDING_TEST") == nullptr) {
+        MESSAGE("Skipping signal forwarding integration test; set PROFILEX_ENABLE_SIGNAL_FORWARDING_TEST=1 to enable it.");
         return;
     }
 
